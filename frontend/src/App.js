@@ -3,6 +3,9 @@ import ReportSelector from './components/ReportSelector';
 import AnalysisView from './components/AnalysisView';
 import './App.css';
 
+// --- PRODUCTION API URL ---
+const API_BASE_URL = 'https://ai-esg-risk-analyzer-backend.onrender.com';
+
 function App() {
   const [reports, setReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
@@ -13,22 +16,21 @@ function App() {
   const [sortConfig, setSortConfig] = useState({ key: 'negativity_score', direction: 'descending' });
   const [riskThreshold, setRiskThreshold] = useState(0.1);
 
-  // This hook runs once on component mount to fetch the list of available reports.
+  // Fetch the list of available reports when the app loads
   useEffect(() => {
-    fetch('http://127.0.0.1:5000/api/reports')
+    fetch(`${API_BASE_URL}/api/reports`)
       .then(response => response.json())
       .then(data => setReports(data))
       .catch(err => {
         console.error("Error fetching reports:", err);
-        setError('Could not connect to the backend. Is the Python server running?');
+        setError('Could not connect to the backend server. It may be starting up.');
       });
   }, []);
   
-  // This function is triggered when a user clicks on a report name in the sidebar.
+  // Handle the selection of a new report to analyze
   const handleSelectReport = (reportName) => {
     if (reportName === selectedReport) return;
     
-    // Reset all states for the new analysis
     setSelectedReport(reportName);
     setIsLoading(true);
     setAnalysisData(null);
@@ -37,8 +39,8 @@ function App() {
     setSortConfig({ key: 'negativity_score', direction: 'descending' });
     setRiskThreshold(0.1);
 
-    // Fetch the detailed analysis for the selected report from the backend API.
-    fetch(`http://127.0.0.1:5000/api/analyze?report=${encodeURIComponent(reportName)}`)
+    // Fetch the detailed analysis for the selected report from the live backend
+    fetch(`${API_BASE_URL}/api/analyze?report=${encodeURIComponent(reportName)}`)
       .then(response => {
         if (!response.ok) {
           throw new Error('Network response was not ok');
@@ -51,31 +53,23 @@ function App() {
       })
       .catch(err => {
         console.error("Error fetching analysis:", err);
-        setError('Failed to analyze the report. Please check the backend server logs.');
+        setError('Failed to analyze the report. The server may be busy. Please try again.');
         setIsLoading(false);
       });
   };
 
-  // useMemo is a performance optimization. This block of code will only re-run when its
-  // dependencies (the data or the filters) change, preventing unnecessary re-renders of the table.
+  // Memoized calculation for filtering and sorting the display data
   const processedData = useMemo(() => {
     if (!analysisData || !analysisData.findings) {
       return null;
     }
-
     let filteredData = [...analysisData.findings];
-
-    // 1. Apply category filter from the dropdown
     if (categoryFilter !== 'All') {
       filteredData = filteredData.filter(item => item.category === categoryFilter);
     }
-    
-    // 2. Apply risk threshold filter from the slider
     if (riskThreshold > 0.1) {
       filteredData = filteredData.filter(item => item.negativity_score >= riskThreshold);
     }
-
-    // 3. Apply sorting based on table header clicks
     filteredData.sort((a, b) => {
       if (a[sortConfig.key] < b[sortConfig.key]) {
         return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -85,7 +79,6 @@ function App() {
       }
       return 0;
     });
-
     return filteredData;
   }, [analysisData, categoryFilter, sortConfig, riskThreshold]);
 
