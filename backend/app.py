@@ -7,9 +7,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 # --- Initialize Flask App and CORS ---
-# This sets up our web server
 app = Flask(__name__)
-# CORS is a security feature that allows our React frontend to make requests to this backend
 CORS(app)
 
 # --- Global Variables and Models (loaded once at startup) ---
@@ -36,6 +34,32 @@ esg_lexicon = {
     ]
 }
 
+# --- NEW: ADVANCED SCORING FUNCTION ---
+def calculate_risk_score(risks, total_sentences):
+    """Calculates a risk score out of 10 based on frequency and severity."""
+    if not risks or total_sentences == 0:
+        return {
+            "score": 0,
+            "severity": 0,
+            "frequency": 0
+        }
+
+    # Factor 1: Severity (the average negativity of all flagged sentences)
+    total_negativity = sum(item['negativity_score'] for item in risks)
+    average_severity = total_negativity / len(risks)
+
+    # Factor 2: Frequency (how often risks appear, normalized per 1000 sentences)
+    normalized_frequency = (len(risks) / total_sentences) * 1000
+
+    # Combine them into a final score. We can weigh them, e.g., 60% for severity, 40% for frequency.
+    final_score = (average_severity * 6) + (normalized_frequency * 0.4) 
+    
+    return {
+        "score": min(round(final_score, 1), 10.0), # Cap the score at 10 and round it
+        "severity": round(average_severity, 2),
+        "frequency": round(normalized_frequency, 2)
+    }
+
 # --- Core Functions ---
 
 def extract_text_from_pdf(pdf_path):
@@ -51,15 +75,17 @@ def extract_text_from_pdf(pdf_path):
         return None
     return text
 
+# --- UPGRADED: analyze_text function now returns a full analysis object ---
 def analyze_text(text):
-    """Analyzes a block of text for ESG risks."""
+    """Analyzes a block of text for ESG risks and calculates scores."""
     if not nlp:
-        return []
+        return {} # Return empty object if NLP model fails
         
     flagged_risks = []
     doc = nlp(text)
     sentences = [sent.text for sent in doc.sents]
     
+    # The loop to find risks is the same
     for sentence in sentences:
         for category, keywords in esg_lexicon.items():
             for keyword in keywords:
@@ -79,7 +105,19 @@ def analyze_text(text):
                 continue
             break
             
-    return flagged_risks
+    # Calculate scores after finding all risks
+    total_sentences_in_doc = len(sentences)
+    scores = calculate_risk_score(flagged_risks, total_sentences_in_doc)
+    
+    # Return a complete analysis object
+    return {
+        "overall_risk_score": scores["score"],
+        "average_severity": scores["severity"],
+        "normalized_frequency": scores["frequency"],
+        "total_risks_found": len(flagged_risks),
+        "report_length_sentences": total_sentences_in_doc,
+        "findings": flagged_risks  # The detailed list of sentences
+    }
 
 # --- API Endpoints ---
 
@@ -95,7 +133,6 @@ def get_reports():
 @app.route('/api/analyze', methods=['GET'])
 def analyze_report():
     """API endpoint to analyze a specific report."""
-    # Get the filename from the request's query parameters (e.g., /api/analyze?report=company_a.pdf)
     report_name = request.args.get('report')
     
     if not report_name:
@@ -113,16 +150,17 @@ def analyze_report():
     if text is None:
         return jsonify({"error": "Failed to extract text from PDF"}), 500
         
-    # 2. Analyze text
+    # 2. Analyze text (this now returns the full analysis object)
     results = analyze_text(text)
     
-    print(f"-> Analysis complete. Found {len(results)} potential risks.")
-    
-    # 3. Return results as JSON
+    if results:
+      print(f"-> Analysis complete. Score: {results.get('overall_risk_score')}. Found {results.get('total_risks_found')} risks.")
+    else:
+      print("-> Analysis complete. No results generated.")
+
+    # 3. Return the entire results object as JSON
     return jsonify(results)
 
 # --- Main entry point ---
 if __name__ == '__main__':
-    # Runs the Flask server
-    # debug=True means the server will automatically reload if you change the code
     app.run(debug=True, port=5000)

@@ -1,11 +1,14 @@
 import React from 'react';
-import RiskChart from './RiskChart';
+import RiskChart from './RiskChart'; // This will now be used
 
-const AnalysisView = ({ 
-  data, isLoading, error, selectedReport, 
-  categoryFilter, setCategoryFilter, 
-  sortConfig, setSortConfig, originalData 
+const AnalysisView = ({
+  data, isLoading, error, selectedReport,
+  categoryFilter, setCategoryFilter,
+  sortConfig, setSortConfig,
+  originalData,
+  riskThreshold, setRiskThreshold
 }) => {
+
   if (isLoading) {
     return <section className="analysis-view"><div className="loader">Analyzing Report...</div></section>;
   }
@@ -18,7 +21,7 @@ const AnalysisView = ({
     return <section className="analysis-view"><p>Please select a report from the left to begin analysis.</p></section>;
   }
 
-  if (!originalData || originalData.length === 0) {
+  if (!originalData || !originalData.findings || originalData.findings.length === 0) {
     return (
       <section className="analysis-view">
         <h2>Analysis for: <strong>{selectedReport}</strong></h2>
@@ -27,8 +30,12 @@ const AnalysisView = ({
     );
   }
   
-  const highestRisk = originalData.reduce((max, item) => (item.negativity_score > max.negativity_score ? item : max), originalData[0]);
+  const highestRisk = originalData.findings.reduce(
+    (max, item) => (item.negativity_score > max.negativity_score ? item : max),
+    originalData.findings[0]
+  );
   
+  // This function will now be used by the table headers
   const requestSort = (key) => {
     let direction = 'ascending';
     if (sortConfig.key === key && sortConfig.direction === 'ascending') {
@@ -37,14 +44,47 @@ const AnalysisView = ({
     setSortConfig({ key, direction });
   };
   
+  // The function to handle the CSV export
+  const handleExport = () => {
+    if (!data || data.length === 0) {
+      alert("No data available to export.");
+      return;
+    }
+
+    const headers = ["Category", "Keyword", "Negativity Score", "Sentence"];
+    const csvRows = [
+      headers.join(','),
+      ...data.map(row => {
+        const sentence = `"${row.sentence.replace(/"/g, '""')}"`;
+        return [row.category, row.keyword, row.negativity_score, sentence].join(',');
+      })
+    ];
+    
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    const fileName = `${selectedReport.replace('.pdf', '')}_analysis.csv`;
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
   return (
     <section className="analysis-view">
       <h2>Analysis for: <strong>{selectedReport}</strong></h2>
       
       <div className="summary-cards">
+        <div className="card score-card">
+          <span className="card-value">{originalData.overall_risk_score}</span>
+          <span className="card-label">Overall Risk Score / 10</span>
+        </div>
         <div className="card">
-          <span className="card-value">{originalData.length}</span>
-          <span className="card-label">Total Risks Flagged</span>
+          <span className="card-value">{originalData.total_risks_found}</span>
+          <span className="card-label">Total Risks Found</span>
         </div>
         <div className="card">
           <span className="card-value">{highestRisk.category}</span>
@@ -57,7 +97,7 @@ const AnalysisView = ({
       </div>
 
       <div className="chart-container">
-        <RiskChart data={originalData} />
+        <RiskChart data={originalData.findings} />
       </div>
 
       <div className="analysis-controls">
@@ -74,6 +114,18 @@ const AnalysisView = ({
             <option value="Social">Social</option>
             <option value="Governance">Governance</option>
           </select>
+          <label htmlFor="threshold-slider">Min. Severity:</label>
+          <input 
+            type="range" 
+            id="threshold-slider"
+            min="0.1" 
+            max="1.0" 
+            step="0.05"
+            value={riskThreshold}
+            onChange={(e) => setRiskThreshold(parseFloat(e.target.value))}
+          />
+          <span>{riskThreshold.toFixed(2)}</span>
+          <button className="export-button" onClick={handleExport}>Export as CSV</button>
         </div>
       </div>
 

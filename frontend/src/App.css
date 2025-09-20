@@ -134,6 +134,17 @@ body {
   margin-top: 5px;
 }
 
+/* --- NEW: Style for the main score card to make it stand out --- */
+.score-card {
+  background-color: #eaf5ff; /* A light blue background */
+  border-color: #007bff;
+}
+.score-card .card-value {
+  font-size: 2.8em; /* Make the main score bigger */
+}
+/* --- END OF NEW STYLE --- */
+
+
 /* Chart Container */
 .chart-container {
   margin: 40px 0;
@@ -245,3 +256,35 @@ table td[colSpan="4"] {
 .pill.environmental { background-color: #dc3545; } /* Red */
 .pill.social { background-color: #007bff; }        /* Blue */
 .pill.governance { background-color: #ffc107; color: black; } /* Yellow */
+.controls-wrapper input[type="range"] {
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.controls-wrapper span {
+  font-weight: bold;
+  min-width: 35px;
+  display: inline-block;
+  text-align: right;
+  vertical-align: middle;
+}
+
+.controls-wrapper label {
+    margin-left: 15px; /* Add some space between controls */
+}
+.export-button {
+  margin-left: auto; /* Pushes the button to the far right */
+  padding: 8px 15px;
+  font-size: 0.9em;
+  font-weight: bold;
+  color: white;
+  background-color: #28a745; /* A green color */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.export-button:hover {
+  background-color: #37d559; /* A darker green */
+}
