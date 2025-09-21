@@ -31,19 +31,16 @@ const AnalysisView = ({
   }
   
   // --- BUG FIX: Correctly calculate the highest risk category by COUNT ---
-  // First, count the number of risks in each category
   const categoryCounts = originalData.findings.reduce((acc, item) => {
     acc[item.category] = (acc[item.category] || 0) + 1;
     return acc;
   }, {});
 
-  // Then, find the category name with the highest count
   const highestRiskCategory = Object.keys(categoryCounts).reduce((a, b) => 
     categoryCounts[a] > categoryCounts[b] ? a : b,
-    Object.keys(categoryCounts)[0] || '' // Add a fallback for safety
+    Object.keys(categoryCounts)[0] || ''
   );
   
-  // We still need the single most severe sentence for the "Top Negativity Score" card
   const mostSevereRiskItem = originalData.findings.reduce(
     (max, item) => (item.negativity_score > max.negativity_score ? item : max),
     originalData.findings[0]
@@ -57,6 +54,36 @@ const AnalysisView = ({
     }
     setSortConfig({ key, direction });
   };
+  
+  // --- RE-ADD EXPORT FUNCTIONALITY ---
+  const handleExport = () => {
+    if (!data || data.length === 0) {
+      alert("No data available to export.");
+      return;
+    }
+
+    const headers = ["Category", "Keyword", "Negativity Score", "Sentence"];
+    const csvRows = [
+      headers.join(','),
+      ...data.map(row => {
+        const sentence = `"${row.sentence.replace(/"/g, '""')}"`;
+        return [row.category, row.keyword, row.negativity_score, sentence].join(',');
+      })
+    ];
+    
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    const fileName = `${selectedReport.replace('.pdf', '')}_analysis.csv`;
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  // --- END OF RE-ADD ---
   
   return (
     <section className="analysis-view">
@@ -72,12 +99,10 @@ const AnalysisView = ({
           <span className="card-label">Total Risks Found</span>
         </div>
         <div className="card">
-          {/* Use the new, correct variable here */}
           <span className="card-value">{highestRiskCategory}</span>
           <span className="card-label">Highest Risk Category</span>
         </div>
         <div className="card">
-          {/* Use the new, correct variable here */}
           <span className="card-value">{mostSevereRiskItem.negativity_score}</span>
           <span className="card-label">Top Negativity Score</span>
         </div>
@@ -112,7 +137,7 @@ const AnalysisView = ({
             onChange={(e) => setRiskThreshold(parseFloat(e.target.value))}
           />
           <span>{riskThreshold.toFixed(2)}</span>
-          <button className="export-button" onClick={() => { /* Export function will be here */ }}>Export as CSV</button>
+          <button className="export-button" onClick={handleExport}>Export as CSV</button>
         </div>
       </div>
 
