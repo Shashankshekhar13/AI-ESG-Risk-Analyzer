@@ -1,5 +1,5 @@
 import React from 'react';
-import RiskChart from './RiskChart'; // This will now be used
+import RiskChart from './RiskChart';
 
 const AnalysisView = ({
   data, isLoading, error, selectedReport,
@@ -30,47 +30,32 @@ const AnalysisView = ({
     );
   }
   
-  const highestRisk = originalData.findings.reduce(
+  // --- BUG FIX: Correctly calculate the highest risk category by COUNT ---
+  // First, count the number of risks in each category
+  const categoryCounts = originalData.findings.reduce((acc, item) => {
+    acc[item.category] = (acc[item.category] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Then, find the category name with the highest count
+  const highestRiskCategory = Object.keys(categoryCounts).reduce((a, b) => 
+    categoryCounts[a] > categoryCounts[b] ? a : b,
+    Object.keys(categoryCounts)[0] || '' // Add a fallback for safety
+  );
+  
+  // We still need the single most severe sentence for the "Top Negativity Score" card
+  const mostSevereRiskItem = originalData.findings.reduce(
     (max, item) => (item.negativity_score > max.negativity_score ? item : max),
     originalData.findings[0]
   );
+  // --- END OF BUG FIX ---
   
-  // This function will now be used by the table headers
   const requestSort = (key) => {
     let direction = 'ascending';
     if (sortConfig.key === key && sortConfig.direction === 'ascending') {
       direction = 'descending';
     }
     setSortConfig({ key, direction });
-  };
-  
-  // The function to handle the CSV export
-  const handleExport = () => {
-    if (!data || data.length === 0) {
-      alert("No data available to export.");
-      return;
-    }
-
-    const headers = ["Category", "Keyword", "Negativity Score", "Sentence"];
-    const csvRows = [
-      headers.join(','),
-      ...data.map(row => {
-        const sentence = `"${row.sentence.replace(/"/g, '""')}"`;
-        return [row.category, row.keyword, row.negativity_score, sentence].join(',');
-      })
-    ];
-    
-    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    const fileName = `${selectedReport.replace('.pdf', '')}_analysis.csv`;
-
-    link.setAttribute('href', url);
-    link.setAttribute('download', fileName);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
   
   return (
@@ -87,11 +72,13 @@ const AnalysisView = ({
           <span className="card-label">Total Risks Found</span>
         </div>
         <div className="card">
-          <span className="card-value">{highestRisk.category}</span>
+          {/* Use the new, correct variable here */}
+          <span className="card-value">{highestRiskCategory}</span>
           <span className="card-label">Highest Risk Category</span>
         </div>
         <div className="card">
-          <span className="card-value">{highestRisk.negativity_score}</span>
+          {/* Use the new, correct variable here */}
+          <span className="card-value">{mostSevereRiskItem.negativity_score}</span>
           <span className="card-label">Top Negativity Score</span>
         </div>
       </div>
@@ -125,7 +112,7 @@ const AnalysisView = ({
             onChange={(e) => setRiskThreshold(parseFloat(e.target.value))}
           />
           <span>{riskThreshold.toFixed(2)}</span>
-          <button className="export-button" onClick={handleExport}>Export as CSV</button>
+          <button className="export-button" onClick={() => { /* Export function will be here */ }}>Export as CSV</button>
         </div>
       </div>
 
