@@ -288,3 +288,64 @@ table td[colSpan="4"] {
 .export-button:hover {
   background-color: #37d559; /* A darker green */
 }
+@media (max-width: 768px) {
+  
+  /* Change the main layout from a row to a column */
+  .App-main {
+    flex-direction: column;
+    height: auto; /* Allow height to grow as needed */
+  }
+
+  /* Make both the selector and the view take up the full width */
+  .report-selector, .analysis-view {
+    width: 100%;
+    height: auto;
+    border-right: none; /* Remove the vertical border */
+    overflow-y: visible; /* Let them grow */
+  }
+  
+  .report-selector {
+    padding: 15px;
+    border-bottom: 2px solid #eee; /* Add a horizontal border instead */
+  }
+  
+  .analysis-view {
+    padding: 15px;
+  }
+  
+  .App-header h1, .report-selector h2, .analysis-view h2 {
+    font-size: 1.5em; /* Make text slightly smaller */
+  }
+  
+  /* Make the summary cards stack vertically */
+  .summary-cards {
+    grid-template-columns: 1fr; /* Force one card per row */
+    gap: 10px;
+  }
+
+  .card-value {
+    font-size: 2em;
+  }
+  
+  /* Make the controls stack for easier tapping */
+  .analysis-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .controls-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+  }
+  
+  .controls-wrapper select, .export-button {
+    width: 100%;
+  }
+
+  .controls-wrapper label {
+    margin-left: 0;
+  }
+}
