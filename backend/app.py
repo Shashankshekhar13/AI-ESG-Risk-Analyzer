@@ -1,23 +1,22 @@
 import os
-import nltk # <-- Replaced spaCy
-from nltk.tokenize import sent_tokenize # <-- Replaced spaCy
+import nltk
+from nltk.tokenize import sent_tokenize
 import pandas as pd
-import PyPDF2
+import fitz  # PyMuPDF
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-# --- NEW: Download NLTK model ---
-# This line ensures the necessary tokenizer model is available on the server
+# Download the NLTK model for sentence tokenization
 nltk.download('punkt')
 
-# --- Initialize Flask App and CORS ---
+# Initialize Flask App and CORS
 app = Flask(__name__)
 CORS(app)
 
-# --- Global Variables and Models ---
+# Global Variables and Models
 PDF_SOURCE_FOLDER = 'data'
-analyzer = SentimentIntensityAnalyzer() # VaderSentiment is still used
+analyzer = SentimentIntensityAnalyzer()
 
 esg_lexicon = {
     'Environmental': [
@@ -49,40 +48,33 @@ def calculate_risk_score(risks, total_sentences):
         "frequency": round(normalized_frequency, 2)
     }
 
-# The text extraction function is unchanged
+# --- UPGRADED: High-speed PDF text extraction function ---
 def extract_text_from_pdf(pdf_path):
-    """Extracts all text from a single PDF file."""
+    """Extracts all text from a single PDF file using the fast PyMuPDF library."""
     text = ""
     try:
-        with open(pdf_path, 'rb') as pdf_file:
-            reader = PyPDF2.PdfReader(pdf_file)
-            for page in reader.pages:
-                text += page.extract_text() or ""
+        with fitz.open(pdf_path) as doc:
+            for page in doc:
+                text += page.get_text()
     except Exception as e:
         print(f"Error extracting text from {pdf_path}: {e}")
         return None
     return text
 
-# --- UPGRADED: analyze_text function now uses NLTK ---
+# The analysis function is unchanged (it already uses NLTK)
 def analyze_text(text):
     """Analyzes a block of text for ESG risks using NLTK (low memory)."""
     flagged_risks = []
-    
-    # Use NLTK's sentence tokenizer instead of spaCy
     sentences = sent_tokenize(text)
-    
     for sentence in sentences:
-        # Clean up each sentence a bit
         sentence = sentence.replace('\n', ' ').strip()
         if not sentence:
             continue
-
         for category, keywords in esg_lexicon.items():
             for keyword in keywords:
                 if keyword in sentence.lower():
                     sentiment_scores = analyzer.polarity_scores(sentence)
                     negativity_score = sentiment_scores['neg']
-                    
                     if negativity_score > 0.1:
                         flagged_risks.append({
                             'category': category,
@@ -110,7 +102,6 @@ def analyze_text(text):
 # The API endpoints are unchanged
 @app.route('/api/reports', methods=['GET'])
 def get_reports():
-    """API endpoint to list available PDF reports in the data folder."""
     try:
         files = [f for f in os.listdir(PDF_SOURCE_FOLDER) if f.endswith('.pdf')]
         return jsonify(files)
@@ -119,7 +110,6 @@ def get_reports():
 
 @app.route('/api/analyze', methods=['GET'])
 def analyze_report():
-    """API endpoint to analyze a specific report."""
     report_name = request.args.get('report')
     if not report_name:
         return jsonify({"error": "Report name is required"}), 400
