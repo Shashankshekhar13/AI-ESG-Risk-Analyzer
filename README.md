@@ -18,11 +18,6 @@ A sophisticated full-stack web application designed to automate the detection an
 - [Installation](#installation)
 - [Usage](#usage)
 - [Deployment](#deployment)
-- [Project Timeline](#project-timeline)
-- [Key Learnings and Project Impact](#key-learnings-and-project-impact)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
 
 ## Problem and Goal
 
@@ -47,32 +42,7 @@ Leveraging cutting-edge AI technology, this project transforms unstructured repo
 
 ## Screenshots
 
-![Title Slide - AI-Driven ESG Risk Analysis Overview](images/title_slide.png)  
-*Overview of the AI-Driven ESG Risk Analysis project.*
 
-![Problem & Goal - Addressing ESG Challenges](images/problem_goal_slide.png)  
-*Highlighting the problem of manual ESG review and the project’s objectives.*
-
-![Building the Data Engine - Backend Development](images/data_engine_slide.png)  
-*Showcasing the Python Flask API and NLP pipeline development.*
-
-![Tableau Prototype - Early Visualization](images/tableau_prototype_slide.png)  
-*Demonstration of the initial Tableau dashboard prototype.*
-
-![Interactive Web Application - Frontend Evolution](images/web_app_slide.png)  
-*Display of the React-based dashboard with live Google report analysis.*
-
-![Final Features & Deployment - Live Application](images/final_features_slide.png)  
-*Illustration of the deployed app with advanced features and responsiveness.*
-
-![Explore the Final Project - Access Links](images/explore_project_slide.png)  
-*Links to the live app, GitHub, and demo resources.*
-
-![Key Learnings & Impact - Technical Growth](images/learnings_impact_slide.png)  
-*Summary of technical learnings and project impact on sustainable finance.*
-
-![Thank You - Project Conclusion](images/thank_you_slide.png)  
-*Closing slide acknowledging the internship and support.*
 
 ## Tech Stack
 
